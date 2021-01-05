@@ -4,7 +4,7 @@ kafka/docker-compose.yml
 
 Creates application containing Multiple Docker containers used for Kafka Application. Kafka and Zookeeper are assumed to be running on a Hosted Platform like AWS MSK.
 
-Services
+Services defined in compose file are as below
 1. KsqlDB-Server
 2. KsqlDB-CLI
 3. Schema Registry
