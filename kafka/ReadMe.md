@@ -1,4 +1,4 @@
-kafka/docker-compose.yml
+docker-compose.yml
 
 Creates application containing Multiple Docker containers used for Kafka Application. Kafka and Zookeeper are assumed to be running on a Hosted Platform like AWS MSK.
 
