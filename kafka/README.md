@@ -12,3 +12,7 @@ Services defined in compose file are as below
     Kafka Connect UI
     Kafka RestProxy
     Kafka Topics UI
+    
+Access KSQL DB through KSQLDB CLI using Below command
+
+    docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
