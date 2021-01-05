@@ -1,0 +1,112 @@
+version: "3.9"
+services:
+  ksqldb-server:
+    image: confluentinc/cp-ksqldb-server:latest
+    hostname: ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+      - schema-registry
+    ports:
+      - "8088:8088"  
+    environment: 
+      KSQL_LISTENERS: "http://0.0.0.0:8088"
+      KSQL_HOST_NAME: ksqldb-server
+      KSQL_BOOTSTRAP_SERVERS: "server-host:9092,server-host:9092"
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      KSQL_KSQL_CONNECT_URL: "http://kafka-connect:8083"
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
+      KSQL_KSQL_ACCESS_VALIDATOR_ENABLE: "off"
+    
+  ksqldb-cli:
+    image: confluentinc/cp-ksqldb-cli:latest
+    container_name: ksqldb-cli
+    depends_on:
+      - ksqldb-server
+    entrypoint: /bin/sh
+    tty: true
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    container_name: schema-registry
+    hostname: schema-registry
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://server-host:9092,PLAINTEXT://server-host:9092
+
+  schema-registry-ui:
+    image: landoop/schema-registry-ui:latest
+    container_name: schema-registry-ui
+    ports:
+      - "8000:8000"
+    environment:
+      SCHEMAREGISTRY_URL: "http://schema-registry:8081"
+      PROXY: "true"
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:latest
+    container_name: kafka-connect
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "server-host:9092,server-host:9092"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: "group-id"
+      CONNECT_CONFIG_STORAGE_TOPIC: "topic"
+      CONNECT_OFFSET_STORAGE_TOPIC: "offset"
+      CONNECT_STATUS_STORAGE_TOPIC: "status"
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+      CONNECT_VALUE_CONVERTER: "io.confluent.connect.avro.AvroConverter"
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
+      CONNECT_PLUGIN_PATH: "/usr/share/java"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 2
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "DEBUG"  
+       
+  kafka-connect-ui:
+    image: landoop/kafka-connect-ui:latest
+    container_name: kafka-connect-ui
+    depends_on:
+       - kafka-connect
+    ports:
+       - "8010:8000"
+    environment:
+      CONNECT_URL: "http://kafka-connect:8083"
+      CADDY_OPTIONS: basicauth / User Password
+
+  kafka-restproxy:
+    image: confluentinc/cp-kafka-rest:latest
+    container_name: kafka-restproxy
+    hostname: kafka-restproxy
+    ports:
+      - "8082:8082"
+    depends_on:
+      - schema-registry     
+    environment:
+      KAFKA_REST_BOOTSTRAP_SERVERS: "server-host:9092,server-host:9092"
+      KAFKA_REST_CLIENT_BOOTSTRAP_SERVERS: "server-host:9092,server-host:9092"
+      KAFKA_REST_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      KAFKA_REST_HOST_NAME: kafka-restproxy
+      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+      KAFKA_REST_ACCESS_CONTROL_ALLOW_ORIGN: "*"
+
+  kafka-topics-ui:
+    image: landoop/kafka-topics-ui:latest
+    container_name: kafka-topics-ui
+    depends_on:
+      - kafka-restproxy
+    ports:
+      - "8020:8000"
+    environment:
+      KAFKA_REST_PROXY_URL: "http://kafka-restproxy:8082"
+      SCHEMAREGISTRY_UI_URL: "http://schema-registry:8081"
+      CADDY_OPTIONS: basicauth / User Password
+      PROXY: "true"
