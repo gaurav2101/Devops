@@ -1,0 +1,49 @@
+---
+
+- name: Run common tasks on all servers
+  hosts: all
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+  - common
+
+- name: Configure main rsyslog server
+  hosts: syslog_server
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+  - rsyslog
+
+- name: Configure HAProxy server
+  hosts: ha_proxy_server
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+  - ha_proxy
+
+- name: Configure SFTP server
+  hosts: sftp_server
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+  - sftp
+
+- name: Configure SMTP server
+  hosts: smtp_server
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+  - smtp
+
+- name: Configure System server
+  hosts: system_server
+  become: true
+  become_user: root
+  become_method: sudo
+  roles:
+  - system_logs
