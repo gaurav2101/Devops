@@ -1,0 +1,27 @@
+---
+  - name: Update sshd_config file to allow sftp logs to come to syslog
+    lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^(.*)/usr/libexec/openssh/sftp-server(.*)$'
+      line: 'Subsystem     sftp    /usr/libexec/openssh/sftp-server -l INFO -f AUTH'
+      backrefs: yes
+    notify:
+      - restart sshd
+
+  - name: Add rule for logs format
+    blockinfile:
+      path: /etc/rsyslog.conf
+      block: |
+         auth.* /var/log/sftp.log
+         mail.* /var/log/maillog
+         local0.* /var/log/haproxy-all.log
+         & ~
+    notify:
+      - restart rsyslog
+
+  - name: Create custom config file in rsyslog.d directory
+    template:
+       src: haproxy.conf.j2
+       dest: /etc/rsyslog.d/haproxy.conf
+    notify:
+      - restart rsyslog

@@ -1,0 +1,41 @@
+---
+  - name: Add haproxy repository from PPA
+    apt_repository:
+      repo: ppa:vbernat/haproxy-1.8
+
+  - name: install haproxy
+    apt:
+      name: haproxy
+      update_cache: yes
+      state: present
+
+  - name: Modify haproxy config file
+    template:
+       src: haproxy.cfg.j2
+       dest: /etc/haproxy/haproxy.cfg
+    notify:
+      - restart haproxy
+
+  - name: Read rsyslog file
+    command: cat /etc/rsyslog.conf
+    register: catoutput
+    changed_when: false
+
+  - name: Add rule if not present
+    lineinfile:
+      path: /etc/rsyslog.conf
+      line: local0.* action(type="omfwd" target="{{haproxy_lb_ip}}" port="{{rsyslog_port}}" protocol="tcp" action.resumeRetryCount="{{retry_count_value}}" queue.type="{{queue_type_value}}" queue.size="{{queue_size_value}}")
+    when:
+      - catoutput.stdout.find('local0.*') == -1
+    notify:
+      - restart rsyslog
+
+  - name: Update content rule if already present
+    lineinfile:
+      path: /etc/rsyslog.conf
+      regexp: '^(.*)action.resumeRetryCount(.*)$'
+      line: local0.* action(type="omfwd" target="{{haproxy_lb_ip}}" port="{{rsyslog_port}}" protocol="tcp" action.resumeRetryCount="{{retry_count_value}}" queue.type="{{queue_type_value}}" queue.size="{{queue_size_value}}")
+    when:
+      - catoutput.stdout.find('local0.*') == 0
+    notify:
+      - restart rsyslog

@@ -1,0 +1,11 @@
+##Inventory File
+
+[syslog_server]
+
+[sftp_server]
+
+[smtp_server]
+
+[ha_proxy_server]
+
+[system_server]

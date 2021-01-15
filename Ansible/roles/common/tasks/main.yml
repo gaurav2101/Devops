@@ -1,0 +1,25 @@
+---
+  - name: install rsyslog
+    apt:
+      name: rsyslog
+      state: present
+
+  - name: enable rsyslog service and start rsyslog service
+    service:
+      name: rsyslog
+      state: started
+      enabled: yes
+
+  - name: Check if Firewall is enabled
+    command: ufw status
+    register: Ubuntufirewallstatus
+    changed_when: false
+
+  - name: Allow port in firewall if it is enabled
+    command: "{{item}}"
+    with_items:
+    - ufw allow {{rsyslog_port}}/tcp
+    - ufw allow {{rsyslog_port}}/udp
+    - ufw reload
+    when:
+      - Ubuntufirewallstatus.stdout.find('active') == 0

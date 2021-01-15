@@ -1,0 +1,34 @@
+---
+
+  - name: Update sshd_config file to allow sftp logs to be sent to syslog
+    lineinfile:
+      dest: /etc/ssh/sshd_config
+      regexp: '^(.*)/usr/libexec/openssh/sftp-server(.*)$'
+      line: 'Subsystem     sftp    /usr/libexec/openssh/sftp-server -l INFO -f AUTH'
+      backrefs: yes
+    notify:
+      - restart sshd
+
+  - name: Read rsyslog file
+    command: cat /etc/rsyslog.conf
+    register: catoutput
+    changed_when: false
+
+  - name: Add rule if not present
+    lineinfile:
+      path: /etc/rsyslog.conf
+      line: auth.* action(type="omfwd" target="{{haproxy_lb_ip}}" port="{{rsyslog_port}}" protocol="tcp" action.resumeRetryCount="{{retry_count_value}}" queue.type="{{queue_type_value}}" queue.size="{{queue_size_value}}")
+    when:
+      - catoutput.stdout.find('auth.*') == -1
+    notify:
+      - restart rsyslog
+
+  - name: Update content rule if already present
+    lineinfile:
+      path: /etc/rsyslog.conf
+      regexp: '^(.*)action.resumeRetryCount(.*)$'
+      line: auth.* action(type="omfwd" target="{{haproxy_lb_ip}}" port="{{rsyslog_port}}" protocol="tcp" action.resumeRetryCount="{{retry_count_value}}" queue.type="{{queue_type_value}}" queue.size="{{queue_size_value}}")
+    when:
+      - catoutput.stdout.find('auth.*') == 0
+    notify:
+      - restart rsyslog
